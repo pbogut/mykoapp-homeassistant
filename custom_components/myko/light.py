@@ -72,40 +72,40 @@ def _add_entity(entities, hs, model, deviceClass, friendlyName, debug):
 
     if model == "HPKA315CWB" or model == "HPPA52CWBA023":
         _LOGGER.debug("Creating Outlets")
-        entities.append(HubspaceOutlet(hs, friendlyName, "1", debug))
-        entities.append(HubspaceOutlet(hs, friendlyName, "2", debug))
+        entities.append(MykoOutlet(hs, friendlyName, "1", debug))
+        entities.append(MykoOutlet(hs, friendlyName, "2", debug))
     elif model == "LTS-4G-W":
         _LOGGER.debug("Creating Outlets")
-        entities.append(HubspaceOutlet(hs, friendlyName, "1", debug))
-        entities.append(HubspaceOutlet(hs, friendlyName, "2", debug))
-        entities.append(HubspaceOutlet(hs, friendlyName, "3", debug))
-        entities.append(HubspaceOutlet(hs, friendlyName, "4", debug))
+        entities.append(MykoOutlet(hs, friendlyName, "1", debug))
+        entities.append(MykoOutlet(hs, friendlyName, "2", debug))
+        entities.append(MykoOutlet(hs, friendlyName, "3", debug))
+        entities.append(MykoOutlet(hs, friendlyName, "4", debug))
     elif model == "HB-200-1215WIFIB":
         _LOGGER.debug("Creating Transformers")
-        entities.append(HubspaceTransformer(hs, friendlyName, "1", debug))
-        entities.append(HubspaceTransformer(hs, friendlyName, "2", debug))
-        entities.append(HubspaceTransformer(hs, friendlyName, "3", debug))
+        entities.append(MykoTransformer(hs, friendlyName, "1", debug))
+        entities.append(MykoTransformer(hs, friendlyName, "2", debug))
+        entities.append(MykoTransformer(hs, friendlyName, "3", debug))
     elif model == "52133, 37833":
         _LOGGER.debug("Creating Fan")
-        entities.append(HubspaceFan(hs, friendlyName, debug))
+        entities.append(MykoFan(hs, friendlyName, debug))
         _LOGGER.debug("Creating Light")
-        entities.append(HubspaceLight(hs, friendlyName, debug))
+        entities.append(MykoLight(hs, friendlyName, debug))
     elif model == "76278, 37278":
         _LOGGER.debug("Creating Fan")
-        entities.append(HubspaceFan(hs, friendlyName, debug))
+        entities.append(MykoFan(hs, friendlyName, debug))
         _LOGGER.debug("Creating Light")
-        entities.append(HubspaceLight(hs, friendlyName, debug))
+        entities.append(MykoLight(hs, friendlyName, debug))
     elif model == "DriskolFan" or model == "ZandraFan" or model == "TagerFan":
         _LOGGER.debug("Creating Fan")
-        entities.append(HubspaceFan(hs, friendlyName, debug))
+        entities.append(MykoFan(hs, friendlyName, debug))
         _LOGGER.debug("Creating Light")
-        entities.append(HubspaceLight(hs, friendlyName, debug))
+        entities.append(MykoLight(hs, friendlyName, debug))
     elif deviceClass == "door-lock" and model == "TBD":
         _LOGGER.debug("Creating Lock")
-        entities.append(HubspaceLock(hs, friendlyName, debug))
+        entities.append(MykoLock(hs, friendlyName, debug))
     else:
         _LOGGER.debug("creating lights")
-        entities.append(HubspaceLight(hs, friendlyName, debug))
+        entities.append(MykoLight(hs, friendlyName, debug))
 
     return entities
 
@@ -193,13 +193,13 @@ def setup_platform(
                     _LOGGER.debug("Unknown model fan, setting as Driskol")
                     _LOGGER.debug("If your fan is not a Driskol, raise an issue")
                 entities.append(
-                    HubspaceFan(
+                    MykoFan(
                         hs, friendlyName, debug, childId, model, deviceId, deviceClass
                     )
                 )
             elif deviceClass == "light" or deviceClass == "switch":
                 entities.append(
-                    HubspaceLight(
+                    MykoLight(
                         hs,
                         friendlyName,
                         debug,
@@ -219,7 +219,7 @@ def setup_platform(
                             )
                             outletIndex = function.get("functionInstance").split("-")[1]
                             entities.append(
-                                HubspaceOutlet(
+                                MykoOutlet(
                                     hs,
                                     friendlyName,
                                     outletIndex,
@@ -241,7 +241,7 @@ def setup_platform(
                             )
                             outletIndex = function.get("functionInstance").split("-")[1]
                             entities.append(
-                                HubspaceTransformer(
+                                MykoTransformer(
                                     hs,
                                     friendlyName,
                                     outletIndex,
@@ -283,7 +283,7 @@ def setup_platform(
     hass.services.register("myko", "send_command", my_service)
 
 
-class HubspaceLight(LightEntity):
+class MykoLight(LightEntity):
     """Representation of an Awesome Light."""
 
     def __init__(
@@ -657,7 +657,7 @@ class HubspaceLight(LightEntity):
                 self._color_temp = self._color_temp[: -len(self._temperature_suffix)]
 
 
-class HubspaceOutlet(LightEntity):
+class MykoOutlet(LightEntity):
     """Representation of an Awesome Light."""
 
     def __init__(
@@ -785,7 +785,7 @@ class HubspaceOutlet(LightEntity):
             self._debugInfo = self._hs.getDebugInfo(self._childId)
 
 
-class HubspaceFan(LightEntity):
+class MykoFan(LightEntity):
     """Representation of an Awesome Light."""
 
     def __init__(
@@ -1024,7 +1024,7 @@ class HubspaceFan(LightEntity):
             self._debugInfo = self._hs.getDebugInfo(self._childId)
 
 
-class HubspaceTransformer(LightEntity):
+class MykoTransformer(LightEntity):
     """Representation of an Awesome Light."""
 
     def __init__(
@@ -1161,7 +1161,7 @@ class HubspaceTransformer(LightEntity):
             self._debugInfo = self._hs.getDebugInfo(self._childId)
 
 
-class HubspaceLock(LightEntity):
+class MykoLock(LightEntity):
     """Representation of an Awesome Light."""
 
     def __init__(

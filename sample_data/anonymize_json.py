@@ -6,7 +6,7 @@ import sys
 import uuid
 import random
 
-parser = argparse.ArgumentParser(description = 'Anonymize the JSON output for Hubspace, so that it can be shared')
+parser = argparse.ArgumentParser(description = 'Anonymize the JSON output for Myko, so that it can be shared')
 
 parser.add_argument('--infile', '-i', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
 parser.add_argument('--outfile', '-o', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
