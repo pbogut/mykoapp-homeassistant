@@ -333,6 +333,14 @@ class HubspaceLight(LightEntity):
 
         self._supported_color_modes = []
 
+        # https://www.castorama.pl/panel-led-goodhome-smart-4600-lm-120-x-30-cm/5063022065582_CAPL.prd
+        if  deviceClass == "light" and self._model == "TBD":
+            self._supported_color_modes.extend(
+                [ColorMode.RGB, ColorMode.COLOR_TEMP, ColorMode.WHITE]
+            )
+            self._max_mireds = 370
+            self._min_mireds = 154
+
         # https://www.homedepot.com/p/Commercial-Electric-500-Watt-Single-Pole-Smart-Hubspace-Dimmer-with-Motion-Sensor-White-HPDA311CWB/317249353
         if self._model == "HPDA311CWB":
             self._supported_color_modes.extend([ColorMode.BRIGHTNESS])
