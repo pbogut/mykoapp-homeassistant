@@ -1,9 +1,9 @@
 {
-  "title": "Hubspace",
+  "title": "myko",
   "services": {
     "send_command": {
       "name": "Send Command",
-      "description": "Sends a custom hubspace API command.",
+      "description": "Sends a custom Myko API command.",
       "fields": {
         "value": {
           "name": "Value",

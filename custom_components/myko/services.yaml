@@ -1,8 +1,8 @@
 send_command:
-  description: Send a Command To Hubspace Cloud
+  description: Send a Command To Myko Cloud
   target:
     entity:
-      integration: hubspace
+      integration: myko
       domain: light
   fields:
     value:
@@ -14,7 +14,7 @@ send_command:
       name: functionClass
       description: functionClass you want to send
       required: true
-      example: "power"  
+      example: "power"
     functionInstance:
       name: functionInstance
       description: functionInstance you want to send

@@ -1,0 +1,11 @@
+{
+  "domain": "myko",
+  "name": "myko",
+  "codeowners": ["@pbogut"],
+  "dependencies": [],
+  "documentation": "https://github.com/pbogut/mykoapp-homeassistant/blob/main/README.md",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/pbogut/mykoapp-homeassistant/issues",
+  "requirements": [],
+  "version": "1.0"
+}

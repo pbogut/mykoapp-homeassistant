@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from .hubspace import HubSpace
+from .myko import Myko
 import voluptuous as vol
 
 # Import the device class from the component that you want to support
@@ -56,7 +56,7 @@ def _brightness_to_hass(value):
     return int(value) * 255 // 100
 
 
-def _brightness_to_hubspace(value):
+def _brightness_to_myko(value):
     return value * 100 // 255
 
 
@@ -99,7 +99,7 @@ def _add_entity(entities, hs, model, deviceClass, friendlyName, debug):
         _LOGGER.debug("Creating Fan")
         entities.append(HubspaceFan(hs, friendlyName, debug))
         _LOGGER.debug("Creating Light")
-        entities.append(HubspaceLight(hs, friendlyName, debug))    
+        entities.append(HubspaceLight(hs, friendlyName, debug))
     elif deviceClass == "door-lock" and model == "TBD":
         _LOGGER.debug("Creating Lock")
         entities.append(HubspaceLock(hs, friendlyName, debug))
@@ -125,10 +125,10 @@ def setup_platform(
     password = config.get(CONF_PASSWORD)
     debug = config.get(CONF_DEBUG)
     try:
-        hs = HubSpace(username, password)
+        hs = Myko(username, password)
     except requests.exceptions.ReadTimeout as ex:
         raise PlatformNotReady(
-            f"Connection error while connecting to hubspace: {ex}"
+            f"Connection error while connecting to myko: {ex}"
         ) from ex
 
     entities = []
@@ -136,7 +136,7 @@ def setup_platform(
 
         _LOGGER.debug("friendlyName " + friendlyName)
         [childId, model, deviceId, deviceClass] = hs.getChildId(friendlyName)
-        
+
         if deviceClass == "fan" and model == "":
             model = "DriskolFan"
             _LOGGER.debug("Unknown model fan, setting as Driskol")
@@ -146,7 +146,7 @@ def setup_platform(
         _LOGGER.debug("childId: " + childId)
         _LOGGER.debug("deviceId: " + deviceId)
         _LOGGER.debug("deviceClass: " + deviceClass)
-            
+
         entities = _add_entity(entities, hs, model, deviceClass, friendlyName, debug)
 
     for roomName in config.get(CONF_ROOMNAMES):
@@ -165,7 +165,7 @@ def setup_platform(
             _LOGGER.debug("deviceId: " + deviceId)
             _LOGGER.debug("deviceClass: " + deviceClass)
             _LOGGER.debug("friendlyName: " + friendlyName)
-            
+
             entities = _add_entity(
                 entities, hs, model, deviceClass, friendlyName, debug
             )
@@ -280,7 +280,7 @@ def setup_platform(
                     i.send_command(functionClass, value, functionInstance)
 
     # Register our service with Home Assistant.
-    hass.services.register("hubspace", "send_command", my_service)
+    hass.services.register("myko", "send_command", my_service)
 
 
 class HubspaceLight(LightEntity):
@@ -354,7 +354,7 @@ class HubspaceLight(LightEntity):
         ):
             self._usePowerFunctionInstance = "primary"
             self._supported_color_modes.extend([ColorMode.RGB, ColorMode.WHITE])
-        
+
         if (
             self._model == "AL-TP-RGBCW-60-2116, AL-TP-RGBCW-60-2232"
         ):
@@ -362,7 +362,7 @@ class HubspaceLight(LightEntity):
             self._supported_color_modes.extend([ColorMode.RGB, ColorMode.COLOR_TEMP, ColorMode.WHITE])
             self._max_mireds = 454
             self._min_mireds = 154
-            
+
         # https://www.homedepot.com/p/EcoSmart-6-5-ft-Smart-RGWBIC-Dynamic-Color-Changing-Dimmable-Plug-In-LED-Strip-Light-Powered-by-Hubspace-AL-TP-RGBICTW-6/324731690
         if (
             self._model == "AL-TP-RGBICTW-6"
@@ -371,7 +371,7 @@ class HubspaceLight(LightEntity):
             self._supported_color_modes.extend([ColorMode.RGB, ColorMode.COLOR_TEMP, ColorMode.WHITE])
             self._max_mireds = 454
             self._min_mireds = 154
-        
+
         # https://www.homedepot.com/p/Commercial-Electric-4-in-Smart-Hubspace-Color-Selectable-CCT-Integrated-LED-Recessed-Light-Trim-Works-with-Amazon-Alexa-and-Google-538551010/314199717
         # https://www.homedepot.com/p/Commercial-Electric-6-in-Smart-Hubspace-Ultra-Slim-New-Construction-and-Remodel-RGB-W-LED-Recessed-Kit-Works-with-Amazon-Alexa-and-Google-50292/313556988
         #  https://www.homedepot.com/p/EcoSmart-120-Watt-Equivalent-Smart-Hubspace-PAR38-Color-Changing-CEC-LED-Light-Bulb-with-Voice-Control-1-Bulb-11PR38120RGBWH1/318411934
@@ -451,7 +451,7 @@ class HubspaceLight(LightEntity):
             )
             self._max_mireds = 370
             self._min_mireds = 154
-        
+
         if (
             self._model == "ZandraFan"
         ):
@@ -461,7 +461,7 @@ class HubspaceLight(LightEntity):
             self._usePowerFunctionInstance = "light-power"
             self._max_mireds = 370
             self._min_mireds = 154
-            
+
         # If model not found, use On/Off Only as a failsafe
         if not self._supported_color_modes:
             self._supported_color_modes.extend([ColorMode.ONOFF])
@@ -527,7 +527,7 @@ class HubspaceLight(LightEntity):
         """Return true if light is on."""
         if self._state is None:
             return None
-        else:    
+        else:
             return self._state == "on"
 
     def send_command(self, field_name, field_state, functionInstance=None) -> None:
@@ -546,7 +546,7 @@ class HubspaceLight(LightEntity):
         ):
             brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
             self._hs.setState(
-                self._childId, "brightness", _brightness_to_hubspace(brightness)
+                self._childId, "brightness", _brightness_to_myko(brightness)
             )
 
         if ATTR_RGB_COLOR in kwargs and any(
@@ -562,7 +562,7 @@ class HubspaceLight(LightEntity):
             self._hs.setState(self._childId, "color-mode", self._colorMode)
             brightness = kwargs.get(ATTR_WHITE, self._brightness)
             self._hs.setState(
-                self._childId, "brightness", _brightness_to_hubspace(brightness)
+                self._childId, "brightness", _brightness_to_myko(brightness)
             )
 
         if ATTR_COLOR_TEMP in kwargs and (
@@ -685,7 +685,7 @@ class HubspaceOutlet(LightEntity):
                 self._deviceId,
                 deviceClass,
             ] = self._hs.getChildId(friendlyname)
-    
+
     async def async_setup_entry(hass, entry):
         """Set up the media player platform for Sonos."""
 
@@ -700,7 +700,7 @@ class HubspaceOutlet(LightEntity):
             },
             "send_command",
         )
-        
+
     @property
     def name(self) -> str:
         """Return the display name of this light."""
@@ -720,19 +720,19 @@ class HubspaceOutlet(LightEntity):
     def supported_color_modes(self) -> set[ColorMode]:
         """Flag supported color modes."""
         return {self.color_mode}
-    
+
     def send_command(self, field_name, field_state, functionInstance=None) -> None:
         self._hs.setState(self._childId, field_name, field_state, functionInstance)
 
     def set_send_state(self, field_name, field_state) -> None:
         self._hs.setState(self._childId, field_name, field_state)
-        
+
     @property
     def is_on(self) -> bool | None:
         """Return true if light is on."""
         if self._state is None:
             return None
-        else:    
+        else:
             return self._state == "on"
 
     def turn_on(self, **kwargs: Any) -> None:
@@ -829,7 +829,7 @@ class HubspaceFan(LightEntity):
             },
             "send_command",
         )
-        
+
     @property
     def name(self) -> str:
         """Return the display name of this light."""
@@ -845,13 +845,13 @@ class HubspaceFan(LightEntity):
 
     def set_send_state(self, field_name, field_state) -> None:
         self._hs.setState(self._childId, field_name, field_state)
-        
+
     @property
     def is_on(self) -> bool | None:
         """Return true if light is on."""
         if self._state is None:
             return None
-        else:    
+        else:
             return self._state == "on"
 
     def turn_on(self, **kwargs: Any) -> None:
@@ -859,9 +859,9 @@ class HubspaceFan(LightEntity):
 
         # Homeassistant uses 0-255
         brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
-        brightnessPercent = _brightness_to_hubspace(brightness)
-        
-        
+        brightnessPercent = _brightness_to_myko(brightness)
+
+
         if self._model == "DriskolFan":
             if brightnessPercent < 40:
                 speed = "020"
@@ -874,15 +874,15 @@ class HubspaceFan(LightEntity):
             else:
                 speed = "100"
             speedstring = "fan-speed-5-" + speed
-        elif self._model == "TagerFan":    
+        elif self._model == "TagerFan":
             if brightnessPercent < 25:
                 speed = "020"
             elif brightnessPercent < 35:
                 speed = "030"
             elif brightnessPercent < 45:
-                speed = "040" 
+                speed = "040"
             elif brightnessPercent < 55:
-                speed = "050"    
+                speed = "050"
             elif brightnessPercent < 65:
                 speed = "060"
             elif brightnessPercent < 75:
@@ -904,7 +904,7 @@ class HubspaceFan(LightEntity):
             else:
                 speed = "100"
             speedstring = "fan-speed-" + speed
-        
+
         self._hs.setStateInstance(self._childId, "fan-speed", "fan-speed", speedstring)
         #self.update()
 
@@ -974,7 +974,7 @@ class HubspaceFan(LightEntity):
             brightness = 191
         elif fanspeed == "fan-speed-100":
             brightness = 255
-            
+
         if fanspeed == "fan-speed-5-000":
             brightness = 0
         elif fanspeed == "fan-speed-5-020":
@@ -984,10 +984,10 @@ class HubspaceFan(LightEntity):
         elif fanspeed == "fan-speed-5-060":
             brightness = 153
         elif fanspeed == "fan-speed-5-080":
-            brightness = 204    
+            brightness = 204
         elif fanspeed == "fan-speed-100":
             brightness = 255
-        
+
         # For Tager Fan
         if fanspeed == "fan-speed-000":
             brightness = 0
@@ -998,18 +998,18 @@ class HubspaceFan(LightEntity):
         elif fanspeed == "fan-speed-9-040":
             brightness = 100
         elif fanspeed == "fan-speed-9-050":
-            brightness = 125    
+            brightness = 125
         elif fanspeed == "fan-speed-9-060":
             brightness = 150
         elif fanspeed == "fan-speed-9-070":
-            brightness = 175    
+            brightness = 175
         elif fanspeed == "fan-speed-9-080":
             brightness = 200
         elif fanspeed == "fan-speed-9-090":
             brightness = 225
         elif fanspeed == "fan-speed-9-100":
             brightness = 255
-            
+
         self._brightness = brightness
 
         if self._debug:
@@ -1069,13 +1069,13 @@ class HubspaceTransformer(LightEntity):
             },
             "send_command",
         )
-        
+
     def send_command(self, field_name, field_state, functionInstance=None) -> None:
         self._hs.setState(self._childId, field_name, field_state, functionInstance)
 
     def set_send_state(self, field_name, field_state) -> None:
         self._hs.setState(self._childId, field_name, field_state)
-        
+
     @property
     def name(self) -> str:
         """Return the display name of this light."""
@@ -1101,7 +1101,7 @@ class HubspaceTransformer(LightEntity):
         """Return true if light is on."""
         if self._state is None:
             return None
-        else:    
+        else:
             return self._state == "on"
 
     def turn_on(self, **kwargs: Any) -> None:
@@ -1189,7 +1189,7 @@ class HubspaceLock(LightEntity):
                 self._deviceId,
                 deviceClass,
             ] = self._hs.getChildId(friendlyname)
-    
+
     async def async_setup_entry(hass, entry):
         """Set up the media player platform for Sonos."""
 
@@ -1204,13 +1204,13 @@ class HubspaceLock(LightEntity):
             },
             "send_command",
         )
-    
+
     def send_command(self, field_name, field_state, functionInstance=None) -> None:
         self._hs.setState(self._childId, field_name, field_state, functionInstance)
 
     def set_send_state(self, field_name, field_state) -> None:
         self._hs.setState(self._childId, field_name, field_state)
-    
+
     @property
     def name(self) -> str:
         """Return the display name of this light."""
@@ -1236,7 +1236,7 @@ class HubspaceLock(LightEntity):
         """Return true if light is on."""
         if self._state is None:
             return None
-        else:    
+        else:
             return self._state == "locked"
 
     def turn_on(self, **kwargs: Any) -> None:

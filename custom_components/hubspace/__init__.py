@@ -1,1 +1,0 @@
-"""Hubspace Lights integration."""
