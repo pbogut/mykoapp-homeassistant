@@ -11,6 +11,13 @@ import getpass
 import uuid
 import random
 
+CLIENT_ID = 'hubspace_android'
+REDIRECT_URI = 'hubspace-app://loginredirect'
+API_HOST = 'api2.afero.net'
+AUTH_HOST = 'accounts.hubspaceconnect.com'
+SEMANTICS_HOST = 'semantics2.afero.net'
+REALM_ID = 'thd'
+CONCLAVE_HOST = "conclave-stream1.afero.net"
 
 # Tips for running this-
 # 1. Make sure to import requests from PyPI otherwise you are going to have a bad time.
@@ -26,15 +33,15 @@ def get_code_verifier_and_challenge():
 
 
 def get_refresh_code(user_name, password):
-    url = "https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/auth"
+    url = "https://" + AUTH_HOST + "/auth/realms/" + REALM_ID + "/protocol/openid-connect/auth"
 
     # These are linked
     [code_challenge, code_verifier] = get_code_verifier_and_challenge()
 
     # defining a params dict for the parameters to be sent to the API
     params = {'response_type': 'code',
-              'client_id': 'hubspace_android',
-              'redirect_uri': 'hubspace-app://loginredirect',
+              'client_id': CLIENT_ID,
+              'redirect_uri': REDIRECT_URI,
               'code_challenge': code_challenge,
               'code_challenge_method': 'S256',
               'scope': 'openid offline_access',
@@ -48,8 +55,8 @@ def get_refresh_code(user_name, password):
     execution = re.search('execution=(.+?)&', r.text).group(1)
     tab_id = re.search('tab_id=(.+?)&', r.text).group(1)
 
-    auth_url = "https://accounts.hubspaceconnect.com/auth/realms/thd/login-actions/authenticate?session_code=" + \
-               session_code + "&execution=" + execution + "&client_id=hubspace_android&tab_id=" + tab_id
+    auth_url = "https://" + AUTH_HOST + "/auth/realms/" + REALM_ID + "/login-actions/authenticate?session_code=" + \
+               session_code + "&execution=" + execution + "&client_id=" + CLIENT_ID + "&tab_id=" + tab_id
 
     auth_header = {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -73,20 +80,20 @@ def get_refresh_code(user_name, password):
     session_state = re.search('session_state=(.+?)&code', location).group(1)
     code = re.search('&code=(.+?)$', location).group(1)
 
-    auth_url = "https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/token"
+    auth_url = "https://" + AUTH_HOST + "/auth/realms/" + REALM_ID + "/protocol/openid-connect/token"
 
     auth_header = {
         "Content-Type": "application/x-www-form-urlencoded",
         "user-agent": "Dart/2.15 (dart:io)",
-        "host": "accounts.hubspaceconnect.com",
+        "host": AUTH_HOST,
     }
 
     auth_data = {
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": "hubspace-app://loginredirect",
+        "redirect_uri": REDIRECT_URI,
         "code_verifier": code_verifier,
-        "client_id": "hubspace_android",
+        "client_id": CLIENT_ID,
     }
 
     headers = {}
@@ -97,19 +104,19 @@ def get_refresh_code(user_name, password):
 
 
 def get_auth_token_from_refresh_token(refresh_token):
-    auth_url = "https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/token"
+    auth_url = "https://" + AUTH_HOST + "/auth/realms/" + REALM_ID + "/protocol/openid-connect/token"
 
     auth_header = {
         "Content-Type": "application/x-www-form-urlencoded",
         "user-agent": "Dart/2.15 (dart:io)",
-        "host": "accounts.hubspaceconnect.com",
+        "host": AUTH_HOST,
     }
 
     auth_data = {
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
         "scope": "openid email offline_access profile",
-        "client_id": "hubspace_android",
+        "client_id": CLIENT_ID,
     }
 
     headers = {}
@@ -120,11 +127,11 @@ def get_auth_token_from_refresh_token(refresh_token):
 
 def get_account_id(refresh_token):
     token = get_auth_token_from_refresh_token(refresh_token)
-    auth_url = "https://api2.afero.net/v1/users/me"
+    auth_url = "https://" + API_HOST + "/v1/users/me"
 
     auth_header = {
         "user-agent": "Dart/2.15 (dart:io)",
-        "host": "api2.afero.net",
+        "host": API_HOST,
         "accept-encoding": "gzip",
         "authorization": "Bearer " + token,
     }
@@ -141,12 +148,12 @@ def get_child_id(refresh_token, account_id, device_name, only_print_anonymized_j
 
     auth_header = {
         "user-agent": "Dart/2.15 (dart:io)",
-        "host": "semantics2.afero.net",
+        "host": SEMANTICS_HOST,
         "accept-encoding": "gzip",
         "authorization": "Bearer " + token,
     }
 
-    auth_url = "https://api2.afero.net/v1/accounts/" + account_id + "/metadevices?expansions=state"
+    auth_url = "https://" + API_HOST + "/v1/accounts/" + account_id + "/metadevices?expansions=state"
 
     auth_data = {}
     headers = {}
@@ -185,11 +192,11 @@ def get_state(refresh_token, account_id, child, desired_state_name):
 
     auth_header = {
         "user-agent": "Dart/2.15 (dart:io)",
-        "host": "semantics2.afero.net",
+        "host": SEMANTICS_HOST,
         "accept-encoding": "gzip",
         "authorization": "Bearer " + token,
     }
-    auth_url = "https://api2.afero.net/v1/accounts/" + account_id + "/metadevices/" + child + "/state"
+    auth_url = "https://" + API_HOST + "/v1/accounts/" + account_id + "/metadevices/" + child + "/state"
     auth_data = {}
     headers = {}
 
@@ -231,13 +238,13 @@ def set_state(refresh_token, account_id, child, desired_state_name, state):
 
     auth_header = {
         "user-agent": "Dart/2.15 (dart:io)",
-        "host": "semantics2.afero.net",
+        "host": SEMANTICS_HOST,
         "accept-encoding": "gzip",
         "authorization": "Bearer " + token,
         "content-type": "application/json; charset=utf-8",
     }
 
-    auth_url = "https://api2.afero.net/v1/accounts/" + account_id + "/metadevices/" + child + "/state"
+    auth_url = "https://" + API_HOST + "/v1/accounts/" + account_id + "/metadevices/" + child + "/state"
     r = requests.put(auth_url, json=payload, headers=auth_header)
     for lis in r.json().get('values'):
         for key, val in lis.items():
@@ -265,13 +272,13 @@ def get_conclave(refresh_token, account_id):
 
     auth_header = {
         "user-agent": "Dart/2.15 (dart:io)",
-        "host": "api2.afero.net",
+        "host": API_HOST,
         "accept-encoding": "gzip",
         "authorization": "Bearer " + token,
         "content-type": "application/json; charset=utf-8",
     }
 
-    auth_url = "https://api2.afero.net/v1/accounts/" + account_id + "/conclaveAccess"
+    auth_url = "https://" + API_HOST + "/v1/accounts/" + account_id + "/conclaveAccess"
     r = requests.post(auth_url, json=payload, headers=auth_header)
     print(json.dumps(r.json(), indent=4, sort_keys=True))
     host = r.json().get('conclave').get('host')
@@ -288,7 +295,7 @@ def get_conclave(refresh_token, account_id):
 
 
 # context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-# async with websockets.connect("wss://conclave-stream1.afero.net:443",ssl=context) as websocket:
+# async with websockets.connect("wss://" + CONCLAVE_HOST + ":443",ssl=context) as websocket:
 # await websocket.send('{}')
 # websocket.recv()
 # await websocket.send(json.dumps(header))
@@ -338,7 +345,7 @@ def get_conclave(refresh_token, account_id):
 
 # def test_auth_token(token):
 #    header = "Authorization: Bearer " + str(token)
-#    conn = create_connection("ws://conclave-stream1.afero.net:443" + '/' + container.uuid, header)
+#    conn = create_connection("ws://" + CONCLAVE_HOST + ":443" + '/' + container.uuid, header)
 #    result = conn.recv()
 #    assert result is not None
 
