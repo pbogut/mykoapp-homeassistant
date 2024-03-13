@@ -11,6 +11,12 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+CLIENT_ID = 'hubspace_android'
+REDIRECT_URI = 'hubspace-app://loginredirect'
+API_HOST = 'api2.afero.net'
+AUTH_HOST = 'accounts.hubspaceconnect.com'
+SEMANTICS_HOST = 'semantics2.afero.net'
+REALM_ID = 'thd'
 
 class HubSpace:
 
@@ -44,15 +50,15 @@ class HubSpace:
 
     def getRefreshCode(self):
 
-        URL = "https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/auth"
+        URL = "https://" + AUTH_HOST + "/auth/realms/" + REALM_ID + "/protocol/openid-connect/auth"
 
         [code_challenge, code_verifier] = self.getCodeVerifierAndChallenge()
 
         # defining a params dict for the parameters to be sent to the API
         PARAMS = {
             "response_type": "code",
-            "client_id": "hubspace_android",
-            "redirect_uri": "hubspace-app://loginredirect",
+            "client_id": CLIENT_ID,
+            "redirect_uri": REDIRECT_URI,
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
             "scope": "openid offline_access",
@@ -68,11 +74,11 @@ class HubSpace:
         tab_id = re.search("tab_id=(.+?)&", r.text).group(1)
 
         auth_url = (
-            "https://accounts.hubspaceconnect.com/auth/realms/thd/login-actions/authenticate?session_code="
+            "https://" + AUTH_HOST + "/auth/realms/" + REALM_ID + "/login-actions/authenticate?session_code="
             + session_code
             + "&execution="
             + execution
-            + "&client_id=hubspace_android&tab_id="
+            + "&client_id=" + CLIENT_ID + "&tab_id="
             + tab_id
         )
 
@@ -103,20 +109,20 @@ class HubSpace:
         session_state = re.search("session_state=(.+?)&code", location).group(1)
         code = re.search("&code=(.+?)$", location).group(1)
 
-        auth_url = "https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/token"
+        auth_url = "https://" + AUTH_HOST + "/auth/realms/" + REALM_ID + "/protocol/openid-connect/token"
 
         auth_header = {
             "Content-Type": "application/x-www-form-urlencoded",
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "accounts.hubspaceconnect.com",
+            "host": AUTH_HOST,
         }
 
         auth_data = {
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": "hubspace-app://loginredirect",
+            "redirect_uri": REDIRECT_URI,
             "code_verifier": code_verifier,
-            "client_id": "hubspace_android",
+            "client_id": CLIENT_ID,
         }
 
         headers = {}
@@ -137,19 +143,19 @@ class HubSpace:
             return self._last_token
 
         # _LOGGER.debug("Get New Token")
-        auth_url = "https://accounts.hubspaceconnect.com/auth/realms/thd/protocol/openid-connect/token"
+        auth_url = "https://" + AUTH_HOST + "/auth/realms/" + REALM_ID + "/protocol/openid-connect/token"
 
         auth_header = {
             "Content-Type": "application/x-www-form-urlencoded",
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "accounts.hubspaceconnect.com",
+            "host": AUTH_HOST,
         }
 
         auth_data = {
             "grant_type": "refresh_token",
             "refresh_token": self._refresh_token,
             "scope": "openid email offline_access profile",
-            "client_id": "hubspace_android",
+            "client_id": CLIENT_ID,
         }
 
         headers = {}
@@ -164,11 +170,11 @@ class HubSpace:
     def getAccountId(self):
 
         token = self.getAuthTokenFromRefreshToken()
-        auth_url = "https://api2.afero.net/v1/users/me"
+        auth_url = "https://" + API_HOST + "/v1/users/me"
 
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "api2.afero.net",
+            "host": API_HOST,
             "accept-encoding": "gzip",
             "authorization": "Bearer " + token,
         }
@@ -187,14 +193,14 @@ class HubSpace:
         _LOGGER.debug("token " + token)
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "semantics2.afero.net",
+            "host": SEMANTICS_HOST,
             "accept-encoding": "gzip",
             "authorization": "Bearer " + token,
         }
 
         _LOGGER.debug("token " + self._accountId)
         auth_url = (
-            "https://api2.afero.net/v1/accounts/"
+            "https://" + API_HOST + "/v1/accounts/"
             + self._accountId
             + "/metadevices?expansions=state"
         )
@@ -320,7 +326,7 @@ class HubSpace:
                             model = "YardStake"
                             deviceClass = "light"
                         if defaultImage == "a19-e26-color-cct-60w-smd-frosted-icon":
-                            model = "12A19060WRGBWH2"    
+                            model = "12A19060WRGBWH2"
                         return child, model, deviceId, deviceClass
 
         # _LOGGER.debug("No model found ")
@@ -364,12 +370,12 @@ class HubSpace:
 
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "semantics2.afero.net",
+            "host": SEMANTICS_HOST,
             "accept-encoding": "gzip",
             "authorization": "Bearer " + token,
         }
         auth_url = (
-            "https://api2.afero.net/v1/accounts/"
+            "https://" + API_HOST + "/v1/accounts/"
             + self._accountId
             + "/metadevices/"
             + child
@@ -386,7 +392,7 @@ class HubSpace:
                     if key == "functionClass" and val == desiredStateName:
                         state = lis.get("value")
                     if key == "functionClass" and val == "available" and not lis.get("value"):
-                        return None 
+                        return None
                         #return None
 
         # print(desiredStateName + ": " + state)
@@ -400,12 +406,12 @@ class HubSpace:
 
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "semantics2.afero.net",
+            "host": SEMANTICS_HOST,
             "accept-encoding": "gzip",
             "authorization": "Bearer " + token,
         }
         auth_url = (
-            "https://api2.afero.net/v1/accounts/"
+            "https://" + API_HOST + "/v1/accounts/"
             + self._accountId
             + "/metadevices/"
             + child
@@ -420,7 +426,7 @@ class HubSpace:
             for lis in r.json().get("values"):
                 for key, val in lis.items():
                     if key == "functionClass" and val == "available" and not lis.get("value"):
-                        return None  
+                        return None
                     if (
                         key == "functionClass"
                         and val == desiredStateName
@@ -443,7 +449,7 @@ class HubSpace:
 
         token = self.getAuthTokenFromRefreshToken()
         auth_url = (
-            "https://api2.afero.net/v1/accounts/"
+            "https://" + API_HOST + "/v1/accounts/"
             + self._accountId
             + "/metadevices/"
             + child
@@ -451,7 +457,7 @@ class HubSpace:
         )
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "semantics2.afero.net",
+            "host": SEMANTICS_HOST,
             "accept-encoding": "gzip",
             "authorization": "Bearer " + token,
         }
@@ -493,14 +499,14 @@ class HubSpace:
 
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "semantics2.afero.net",
+            "host": SEMANTICS_HOST,
             "accept-encoding": "gzip",
             "authorization": "Bearer " + token,
             "content-type": "application/json; charset=utf-8",
         }
 
         auth_url = (
-            "https://api2.afero.net/v1/accounts/"
+            "https://" + API_HOST + "/v1/accounts/"
             + self._accountId
             + "/metadevices/"
             + child
@@ -538,14 +544,14 @@ class HubSpace:
 
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "semantics2.afero.net",
+            "host": SEMANTICS_HOST,
             "accept-encoding": "gzip",
             "authorization": "Bearer " + token,
             "content-type": "application/json; charset=utf-8",
         }
 
         auth_url = (
-            "https://api2.afero.net/v1/accounts/"
+            "https://" + API_HOST + "/v1/accounts/"
             + self._accountId
             + "/metadevices/"
             + child
@@ -568,14 +574,14 @@ class HubSpace:
 
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
-            "host": "api2.afero.net",
+            "host": API_HOST,
             "accept-encoding": "gzip",
             "authorization": "Bearer " + token,
             "content-type": "application/json; charset=utf-8",
         }
 
         auth_url = (
-            "https://api2.afero.net/v1/accounts/" + self._accountId + "/conclaveAccess"
+            "https://" + API_HOST + "/v1/accounts/" + self._accountId + "/conclaveAccess"
         )
         r = requests.post(auth_url, json=payload, headers=auth_header)
         r.close()
@@ -595,7 +601,7 @@ class HubSpace:
         state = self.getState(child, "color-rgb")
         if state is None:
             return None
-            
+
         r = int(state.get("color-rgb").get("r"))
         g = int(state.get("color-rgb").get("g"))
         b = int(state.get("color-rgb").get("b"))
