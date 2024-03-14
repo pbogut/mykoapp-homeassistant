@@ -77,7 +77,7 @@ def setup_platform(
     password = config.get(CONF_PASSWORD)
     debug = config.get(CONF_DEBUG)
     try:
-        hs = Myko(username, password)
+        myko = Myko(username, password)
     except requests.exceptions.ReadTimeout as ex:
         raise PlatformNotReady(
             f"Connection error while connecting to myko: {ex}"
@@ -92,7 +92,7 @@ def setup_platform(
         deviceClass,
         friendlyName,
         functions,
-    ] in hs.discoverDeviceIds():
+    ] in myko.discoverDeviceIds():
         _LOGGER.debug("childId " + childId)
         _LOGGER.debug("Switch on Model " + model)
         _LOGGER.debug("deviceId: " + deviceId)
@@ -103,7 +103,7 @@ def setup_platform(
         if deviceClass == "light":
             entities.append(
                 MykoLight(
-                    hs,
+                    myko,
                     friendlyName,
                     debug,
                     childId,
@@ -146,7 +146,7 @@ class MykoLight(LightEntity):
 
     def __init__(
         self,
-        hs,
+        myko,
         friendlyname,
         debug,
         childId=None,
@@ -167,7 +167,7 @@ class MykoLight(LightEntity):
         self._model = model
         self._brightness = None
         self._usePowerFunctionInstance = None
-        self._hs = hs
+        self._myko = myko
         self._deviceId = deviceId
         self._debugInfo = None
 
@@ -185,9 +185,9 @@ class MykoLight(LightEntity):
                 self._model,
                 self._deviceId,
                 deviceClass,
-            ] = self._hs.getChildId(self._name)
+            ] = self._myko.getChildId(self._name)
         if functions is None:
-            functions = self._hs.getFunctions(self._childId)
+            functions = self._myko.getFunctions(self._childId)
 
         self._supported_color_modes = []
 
@@ -265,13 +265,13 @@ class MykoLight(LightEntity):
             return self._state == "on"
 
     def send_command(self, field_name, field_state, functionInstance=None) -> None:
-        self._hs.setState(self._childId, field_name, field_state, functionInstance)
+        self._myko.setState(self._childId, field_name, field_state, functionInstance)
 
     def set_send_state(self, field_name, field_state) -> None:
-        self._hs.setState(self._childId, field_name, field_state)
+        self._myko.setState(self._childId, field_name, field_state)
 
     def turn_on(self, **kwargs: Any) -> None:
-        state = self._hs.setPowerState(
+        state = self._myko.setPowerState(
             self._childId, "on", self._usePowerFunctionInstance
         )
 
@@ -279,23 +279,23 @@ class MykoLight(LightEntity):
             ColorMode.ONOFF not in self._supported_color_modes
         ):
             brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
-            self._hs.setState(
+            self._myko.setState(
                 self._childId, "brightness", _brightness_to_myko(brightness)
             )
 
         if ATTR_RGB_COLOR in kwargs and any(
             mode in COLOR_MODES_COLOR for mode in self._supported_color_modes
         ):
-            self._hs.setRGB(self._childId, *kwargs[ATTR_RGB_COLOR])
+            self._myko.setRGB(self._childId, *kwargs[ATTR_RGB_COLOR])
 
         if ATTR_WHITE in kwargs and (
             any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes)
             or ColorMode.COLOR_TEMP in self._supported_color_modes
         ):
             self._colorMode = ATTR_WHITE
-            self._hs.setState(self._childId, "color-mode", self._colorMode)
+            self._myko.setState(self._childId, "color-mode", self._colorMode)
             brightness = kwargs.get(ATTR_WHITE, self._brightness)
-            self._hs.setState(
+            self._myko.setState(
                 self._childId, "brightness", _brightness_to_myko(brightness)
             )
 
@@ -314,13 +314,13 @@ class MykoLight(LightEntity):
                     )
                 ]
             if self._temperature_suffix is not None:
-                self._hs.setState(
+                self._myko.setState(
                     self._childId,
                     "color-temperature",
                     str(self._color_temp) + self._temperature_suffix,
                 )
             else:
-                self._hs.setState(self._childId, "color-temperature", self._color_temp)
+                self._myko.setState(self._childId, "color-temperature", self._color_temp)
 
     @property
     def rgb_color(self):
@@ -341,7 +341,7 @@ class MykoLight(LightEntity):
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
-        state = self._hs.setPowerState(
+        state = self._myko.setPowerState(
             self._childId, "off", self._usePowerFunctionInstance
         )
 
