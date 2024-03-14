@@ -339,3 +339,35 @@ class MykoLight(LightEntity):
     def should_poll(self):
         """Turn on polling"""
         return True
+
+    def update(self) -> None:
+        """Fetch new state data for this light.
+
+        This is the only method that should fetch new data for Home Assistant.
+        """
+        self._state = self._myko.getPowerState(self._childId)
+
+        if self._debug:
+            self._debugInfo = self._myko.getDebugInfo(self._childId)
+
+        # ColorMode.ONOFF is the only color mode that doesn't support brightness
+        if ColorMode.ONOFF not in self._supported_color_modes:
+            self._brightness = _brightness_to_hass(
+                self._myko.getState(self._childId, "brightness")
+            )
+
+        if any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes):
+            self._rgbColor = self._myko.getRGB(self._childId)
+
+        if (
+            any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes)
+            or ColorMode.COLOR_TEMP in self._supported_color_modes
+        ):
+            self._colorMode = self._myko.getState(self._childId, "color-mode")
+            self._color_temp = self._myko.getState(self._childId, "color-temperature")
+            if (
+                self._temperature_suffix is not None
+                and isinstance(self._color_temp, str)
+                and self._color_temp.endswith(self._temperature_suffix)
+            ):
+                self._color_temp = self._color_temp[: -len(self._temperature_suffix)]
