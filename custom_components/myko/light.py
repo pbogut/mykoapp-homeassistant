@@ -125,17 +125,12 @@ def setup_platform(
         functionClass = call.data["functionClass"]
         value = call.data["value"]
 
-        if "functionInstance" in call.data:
-            functionInstance = call.data["functionInstance"]
-        else:
-            functionInstance = None
-
         for entity_id in entity_ids:
             _LOGGER.info("entity_id: " + str(entity_id))
             for i in entities:
                 if i.entity_id == entity_id:
                     _LOGGER.info("Found Entity")
-                    i.send_command(functionClass, value, functionInstance)
+                    i.send_command(functionClass, value)
 
     # Register our service with Home Assistant.
     hass.services.register("myko", "send_command", my_service)
@@ -166,7 +161,6 @@ class MykoLight(LightEntity):
         self._childId = childId
         self._model = model
         self._brightness = None
-        self._usePowerFunctionInstance = None
         self._myko = myko
         self._deviceId = deviceId
         self._debugInfo = None
@@ -210,7 +204,6 @@ class MykoLight(LightEntity):
             {
                 vol.Required("functionClass"): cv.string,
                 vol.Required("value"): cv.string,
-                vol.Optional("functionInstance"): cv.string,
             },
             "send_command",
         )
@@ -264,12 +257,12 @@ class MykoLight(LightEntity):
         else:
             return self._state == "on"
 
-    def send_command(self, field_name, field_state, functionInstance=None) -> None:
-        self._myko.setState(self._childId, field_name, field_state, functionInstance)
+    def send_command(self, field_name, field_state) -> None:
+        self._myko.setState(self._childId, field_name, field_state)
 
     def turn_on(self, **kwargs: Any) -> None:
         state = self._myko.setPowerState(
-            self._childId, "on", self._usePowerFunctionInstance
+            self._childId, "on"
         )
 
         if ATTR_BRIGHTNESS in kwargs and (
@@ -339,7 +332,7 @@ class MykoLight(LightEntity):
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         state = self._myko.setPowerState(
-            self._childId, "off", self._usePowerFunctionInstance
+            self._childId, "off"
         )
 
     @property

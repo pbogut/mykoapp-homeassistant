@@ -474,7 +474,7 @@ class Myko:
     def getPowerState(self, child):
         return self.getState(child, "power")
 
-    def setState(self, child, desiredStateName, state, instanceField=None):
+    def setState(self, child, desiredStateName, state):
 
         token = self.getAuthTokenFromRefreshToken()
 
@@ -492,10 +492,6 @@ class Myko:
                 }
             ],
         }
-
-        if instanceField is not None:
-            payload["values"][0]["functionInstance"] = instanceField
-            _LOGGER.debug("setting state with instance: " + instanceField)
 
         auth_header = {
             "user-agent": "Dart/2.15 (dart:io)",
@@ -523,8 +519,8 @@ class Myko:
         return state
 
 
-    def setPowerState(self, child, state, powerFunctionInstance=None):
-        self.setState(child, "power", state, powerFunctionInstance)
+    def setPowerState(self, child, state):
+        self.setState(child, "power", state)
 
     async def getConclave(self):
 
