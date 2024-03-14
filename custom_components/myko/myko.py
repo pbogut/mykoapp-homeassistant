@@ -387,15 +387,7 @@ class Myko:
         r = requests.get(auth_url, data=auth_data, headers=auth_header)
         r.close()
 
-        state = {}
-
-        if r.ok:
-            for lis in r.json().get("values"):
-                for key, val in lis.items():
-                    value = lis.get("value")
-                    if key == "functionClass" and val != "available" and value:
-                        state[val] = value
-
+        state = self._state_response_to_state_dict(r)
         return state
 
     def getDebugInfo(self, child):
@@ -433,6 +425,7 @@ class Myko:
         return r.json()
 
     def set_state(self, child, state_values):
+        """Updates state and returns new state dict."""
         token = self.getAuthTokenFromRefreshToken()
 
         auth_data = {}
@@ -472,18 +465,10 @@ class Myko:
         )
         r = requests.put(auth_url, json=payload, headers=auth_header)
         r.close()
-        # TODO: Use to update local state cache
-        # for lis in r.json().get("values"):
-        #     for key, val in lis.items():
-        #         if key == "functionClass" and val == state_name:
-        #             state = lis.get("value")
-
-        # print(state_name + ": " + state)
-        # return state
 
 
-    def setPowerState(self, child, state):
-        self.setState(child, "power", state)
+        state = self._state_response_to_state_dict(r)
+        return state
 
     async def getConclave(self):
 
@@ -512,3 +497,13 @@ class Myko:
         port = r.json().get("conclave").get("port")
         token = r.json().get("tokens")[0].get("token")
         expiresTimestamp = r.json().get("tokens")[0].get("expiresTimestamp")
+
+    def _state_response_to_state_dict(self, r):
+        state = {}
+        if r.ok:
+            for lis in r.json().get("values"):
+                for key, val in lis.items():
+                    value = lis.get("value")
+                    if key == "functionClass" and val != "available" and value:
+                        state[val] = value
+        return state

@@ -22,7 +22,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 # Import exceptions from the requests module
 import requests.exceptions
@@ -43,6 +43,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
+
+# usually its around 1ms, but we can set more just to be safe, especially
+# on slower servers it may take longer (I think)
+UPDATE_SKIP_DELAY_IN_MILISECONDS = 100
 
 def _brightness_to_hass(value):
     if value is None:
@@ -173,6 +177,10 @@ class MykoLight(LightEntity):
         self._rgbColor = None
         self._temperature_choices = None
         self._temperature_suffix = None
+
+        self._last_state = None
+        self._last_state_time = None
+
         if None in (childId, model, deviceId, deviceClass) or "" in (childId, model, deviceId, deviceClass):
             [
                 self._childId,
@@ -308,7 +316,8 @@ class MykoLight(LightEntity):
             else:
                 state["color-temperature"] = self._color_temp
 
-        self._myko.set_state(self._childId, state)
+        self._last_state = self._myko.set_state(self._childId, state)
+        self._last_state_time = datetime.now()
         self._state = "on" # lets be optimistic and assume it worked
 
     @property
@@ -339,11 +348,28 @@ class MykoLight(LightEntity):
         return True
 
     def update(self) -> None:
-        state = self._myko.get_state(self._childId)
         """Fetch new state data for this light.
 
         This is the only method that should fetch new data for Home Assistant.
         """
+        state = {}
+        now = datetime.now()
+
+        # This function is called right after item changes state. When we update
+        # item state with set_state, API is returning new state. Since this
+        # function is called right after (in matter of 1ms usually, on my server
+        # at least) there is no need to call API for new state again. In fact
+        # its harmful, since often server is not up to date right after change
+        # was requested and may return old data.
+
+        since_last_update = timedelta(microseconds=UPDATE_SKIP_DELAY_IN_MILISECONDS * 1000)
+        if self._last_state_time and now - self._last_state_time < since_last_update:
+            state = self._last_state
+        else:
+            state = self._myko.get_state(self._childId)
+            self._last_state = state
+            self._last_state_time = datetime.now()
+
         self._state = state["power"]
 
         if self._debug:
