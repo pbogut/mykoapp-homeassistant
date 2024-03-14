@@ -474,23 +474,28 @@ class Myko:
     def getPowerState(self, child):
         return self.getState(child, "power")
 
-    def setState(self, child, desiredStateName, state):
 
+    def set_state(self, child, state_values):
         token = self.getAuthTokenFromRefreshToken()
 
         auth_data = {}
         headers = {}
 
         utc_time = self.getUTCTime()
+
+
+        values = []
+        for state_name in state_values:
+            values.append({
+                "functionClass": state_name,
+                "lastUpdateTime": utc_time,
+                "value": state_values[state_name],
+            })
+
+
         payload = {
             "metadeviceId": str(child),
-            "values": [
-                {
-                    "functionClass": desiredStateName,
-                    "lastUpdateTime": utc_time,
-                    "value": state,
-                }
-            ],
+            "values": values,
         }
 
         auth_header = {
@@ -510,13 +515,14 @@ class Myko:
         )
         r = requests.put(auth_url, json=payload, headers=auth_header)
         r.close()
-        for lis in r.json().get("values"):
-            for key, val in lis.items():
-                if key == "functionClass" and val == desiredStateName:
-                    state = lis.get("value")
+        # TODO: Use to update local state cache
+        # for lis in r.json().get("values"):
+        #     for key, val in lis.items():
+        #         if key == "functionClass" and val == state_name:
+        #             state = lis.get("value")
 
-        # print(desiredStateName + ": " + state)
-        return state
+        # print(state_name + ": " + state)
+        # return state
 
 
     def setPowerState(self, child, state):

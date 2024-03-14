@@ -258,36 +258,36 @@ class MykoLight(LightEntity):
             return self._state == "on"
 
     def send_command(self, field_name, field_state) -> None:
-        self._myko.setState(self._childId, field_name, field_state)
+        state = {}
+        state[field_name] = field_state
+        self._myko.set_state(self._childId, state)
 
     def turn_on(self, **kwargs: Any) -> None:
-        state = self._myko.setPowerState(
-            self._childId, "on"
-        )
+        state = {
+            "power": "on",
+        }
 
         if ATTR_BRIGHTNESS in kwargs and (
             ColorMode.ONOFF not in self._supported_color_modes
         ):
             brightness = kwargs.get(ATTR_BRIGHTNESS, self._brightness)
-            self._myko.setState(
-                self._childId, "brightness", _brightness_to_myko(brightness)
-            )
+            state["brightness"] = _brightness_to_myko(brightness)
 
         if ATTR_RGB_COLOR in kwargs and any(
             mode in COLOR_MODES_COLOR for mode in self._supported_color_modes
         ):
-            self._myko.setRGB(self._childId, *kwargs[ATTR_RGB_COLOR])
+            [r,g,b] = kwargs[ATTR_RGB_COLOR]
+            state["color-rgb"] = {"color-rgb": {"r": r, "g": g, "b": b}}
+            state["color-mode"] = "color"
 
         if ATTR_WHITE in kwargs and (
             any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes)
             or ColorMode.COLOR_TEMP in self._supported_color_modes
         ):
             self._colorMode = ATTR_WHITE
-            self._myko.setState(self._childId, "color-mode", self._colorMode)
+            state["color-mode"] = self._colorMode
             brightness = kwargs.get(ATTR_WHITE, self._brightness)
-            self._myko.setState(
-                self._childId, "brightness", _brightness_to_myko(brightness)
-            )
+            state["brightness"] = _brightness_to_myko(brightness)
 
         if ATTR_COLOR_TEMP in kwargs and (
             any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes)
@@ -304,13 +304,12 @@ class MykoLight(LightEntity):
                     )
                 ]
             if self._temperature_suffix is not None:
-                self._myko.setState(
-                    self._childId,
-                    "color-temperature",
-                    str(self._color_temp) + self._temperature_suffix,
-                )
+                state["color-temperature"] = str(self._color_temp) + self._temperature_suffix
             else:
-                self._myko.setState(self._childId, "color-temperature", self._color_temp)
+                state["color-temperature"] = self._color_temp
+
+        self._myko.set_state(self._childId, state)
+        self._state = "on" # lets be optimistic and assume it worked
 
     @property
     def rgb_color(self):
@@ -331,9 +330,8 @@ class MykoLight(LightEntity):
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
-        state = self._myko.setPowerState(
-            self._childId, "off"
-        )
+        self._myko.set_state(self._childId, {"power": "off"})
+        self._state = "off" # lets be optimistic and assume it worked
 
     @property
     def should_poll(self):
