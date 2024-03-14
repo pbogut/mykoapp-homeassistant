@@ -359,7 +359,7 @@ class Myko:
                     if function.get("functionClass") == functionClass:
                         yield function
 
-    def getState(self, child, desiredStateName):
+    def get_state(self, child):
 
         state = None
 
@@ -386,55 +386,16 @@ class Myko:
 
         r = requests.get(auth_url, data=auth_data, headers=auth_header)
         r.close()
+
+        state = {}
+
         if r.ok:
             for lis in r.json().get("values"):
                 for key, val in lis.items():
-                    if key == "functionClass" and val == desiredStateName:
-                        state = lis.get("value")
-                    if key == "functionClass" and val == "available" and not lis.get("value"):
-                        return None
-                        #return None
+                    value = lis.get("value")
+                    if key == "functionClass" and val != "available" and value:
+                        state[val] = value
 
-        # print(desiredStateName + ": " + state)
-        return state
-
-    def getStateInstance(self, child, desiredStateName, desiredFunctionInstance):
-
-        state = None
-
-        token = self.getAuthTokenFromRefreshToken()
-
-        auth_header = {
-            "user-agent": "Dart/2.15 (dart:io)",
-            "host": SEMANTICS_HOST,
-            "accept-encoding": "gzip",
-            "authorization": "Bearer " + token,
-        }
-        auth_url = (
-            "https://" + API_HOST + "/v1/accounts/"
-            + self._accountId
-            + "/metadevices/"
-            + child
-            + "/state"
-        )
-        auth_data = {}
-        headers = {}
-
-        r = requests.get(auth_url, data=auth_data, headers=auth_header)
-        r.close()
-        if r.ok:
-            for lis in r.json().get("values"):
-                for key, val in lis.items():
-                    if key == "functionClass" and val == "available" and not lis.get("value"):
-                        return None
-                    if (
-                        key == "functionClass"
-                        and val == desiredStateName
-                        and lis.get("functionInstance") == desiredFunctionInstance
-                    ):
-                        state = lis.get("value")
-
-        # print(desiredStateName + ": " + state)
         return state
 
     def getDebugInfo(self, child):
@@ -470,10 +431,6 @@ class Myko:
         _LOGGER.debug(json.dumps(r.json(), indent=4, sort_keys=True))
         _LOGGER.debug("############ End Dump #########")
         return r.json()
-
-    def getPowerState(self, child):
-        return self.getState(child, "power")
-
 
     def set_state(self, child, state_values):
         token = self.getAuthTokenFromRefreshToken()
@@ -555,19 +512,3 @@ class Myko:
         port = r.json().get("conclave").get("port")
         token = r.json().get("tokens")[0].get("token")
         expiresTimestamp = r.json().get("tokens")[0].get("expiresTimestamp")
-
-    def setRGB(self, child, r, g, b):
-        # assume r,g,b 0-255
-        state = {"color-rgb": {"r": r, "b": b, "g": g}}
-        self.setState(child, "color-rgb", state)
-        self.setState(child, "color-mode", "color")
-
-    def getRGB(self, child):
-        state = self.getState(child, "color-rgb")
-        if state is None:
-            return None
-
-        r = int(state.get("color-rgb").get("r"))
-        g = int(state.get("color-rgb").get("g"))
-        b = int(state.get("color-rgb").get("b"))
-        return (r, g, b)

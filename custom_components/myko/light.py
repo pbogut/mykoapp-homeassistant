@@ -339,11 +339,12 @@ class MykoLight(LightEntity):
         return True
 
     def update(self) -> None:
+        state = self._myko.get_state(self._childId)
         """Fetch new state data for this light.
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        self._state = self._myko.getPowerState(self._childId)
+        self._state = state["power"]
 
         if self._debug:
             self._debugInfo = self._myko.getDebugInfo(self._childId)
@@ -351,18 +352,19 @@ class MykoLight(LightEntity):
         # ColorMode.ONOFF is the only color mode that doesn't support brightness
         if ColorMode.ONOFF not in self._supported_color_modes:
             self._brightness = _brightness_to_hass(
-                self._myko.getState(self._childId, "brightness")
+                state["brightness"]
             )
 
         if any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes):
-            self._rgbColor = self._myko.getRGB(self._childId)
+            rgb = state["color-rgb"]["color-rgb"]
+            self._rgbColor = (rgb["r"], rgb["g"], rgb["b"])
 
         if (
             any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes)
             or ColorMode.COLOR_TEMP in self._supported_color_modes
         ):
-            self._colorMode = self._myko.getState(self._childId, "color-mode")
-            self._color_temp = self._myko.getState(self._childId, "color-temperature")
+            self._colorMode = state["color-mode"]
+            self._color_temp = state["color-temperature"]
             if (
                 self._temperature_suffix is not None
                 and isinstance(self._color_temp, str)
