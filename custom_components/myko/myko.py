@@ -522,43 +522,6 @@ class Myko:
         # print(desiredStateName + ": " + state)
         return state
 
-    def setStateInstance(self, child, desiredStateName, desiredFunctionInstance, state):
-
-        token = self.getAuthTokenFromRefreshToken()
-
-        auth_data = {}
-        headers = {}
-
-        utc_time = self.getUTCTime()
-        payload = {
-            "metadeviceId": str(child),
-            "values": [
-                {
-                    "functionClass": desiredStateName,
-                    "functionInstance": desiredFunctionInstance,
-                    "lastUpdateTime": utc_time,
-                    "value": state,
-                }
-            ],
-        }
-
-        auth_header = {
-            "user-agent": "Dart/2.15 (dart:io)",
-            "host": SEMANTICS_HOST,
-            "accept-encoding": "gzip",
-            "authorization": "Bearer " + token,
-            "content-type": "application/json; charset=utf-8",
-        }
-
-        auth_url = (
-            "https://" + API_HOST + "/v1/accounts/"
-            + self._accountId
-            + "/metadevices/"
-            + child
-            + "/state"
-        )
-        r = requests.put(auth_url, json=payload, headers=auth_header)
-        r.close()
 
     def setPowerState(self, child, state, powerFunctionInstance=None):
         self.setState(child, "power", state, powerFunctionInstance)
