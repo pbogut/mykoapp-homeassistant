@@ -267,9 +267,6 @@ class MykoLight(LightEntity):
     def send_command(self, field_name, field_state, functionInstance=None) -> None:
         self._myko.setState(self._childId, field_name, field_state, functionInstance)
 
-    def set_send_state(self, field_name, field_state) -> None:
-        self._myko.setState(self._childId, field_name, field_state)
-
     def turn_on(self, **kwargs: Any) -> None:
         state = self._myko.setPowerState(
             self._childId, "on", self._usePowerFunctionInstance
