@@ -22,7 +22,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 # Import exceptions from the requests module
 import requests.exceptions
@@ -42,11 +42,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Required(CONF_DEBUG, default=False): cv.boolean,
     }
 )
-
-
-# usually its around 1ms, but we can set more just to be safe, especially
-# on slower servers it may take longer (I think)
-UPDATE_SKIP_DELAY_IN_MILISECONDS = 100
 
 def _brightness_to_hass(value):
     if value is None:
@@ -179,7 +174,7 @@ class MykoLight(LightEntity):
         self._temperature_suffix = None
 
         self._last_state = None
-        self._last_state_time = None
+        self._skip_update = False
 
         if None in (childId, model, deviceId, deviceClass) or "" in (childId, model, deviceId, deviceClass):
             [
@@ -268,7 +263,8 @@ class MykoLight(LightEntity):
     def send_command(self, field_name, field_state) -> None:
         state = {}
         state[field_name] = field_state
-        self._myko.set_state(self._childId, state)
+        self._last_state = self._myko.set_state(self._childId, state)
+        self._skip_update = True
 
     def turn_on(self, **kwargs: Any) -> None:
         state = {
@@ -317,7 +313,7 @@ class MykoLight(LightEntity):
                 state["color-temperature"] = self._color_temp
 
         self._last_state = self._myko.set_state(self._childId, state)
-        self._last_state_time = datetime.now()
+        self._skip_update = True
         self._state = "on" # lets be optimistic and assume it worked
 
     @property
@@ -339,7 +335,8 @@ class MykoLight(LightEntity):
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
-        self._myko.set_state(self._childId, {"power": "off"})
+        self._last_state = self._myko.set_state(self._childId, {"power": "off"})
+        self._skip_update = True
         self._state = "off" # lets be optimistic and assume it worked
 
     @property
@@ -353,22 +350,19 @@ class MykoLight(LightEntity):
         This is the only method that should fetch new data for Home Assistant.
         """
         state = {}
-        now = datetime.now()
 
         # This function is called right after item changes state. When we update
         # item state with set_state, API is returning new state. Since this
-        # function is called right after (in matter of 1ms usually, on my server
-        # at least) there is no need to call API for new state again. In fact
-        # its harmful, since often server is not up to date right after change
-        # was requested and may return old data.
+        # function is called right after, there is no need to call API for new
+        # state again. In fact its harmful, since often server is not up to date
+        # right after change was requested and may return old data.
 
-        since_last_update = timedelta(microseconds=UPDATE_SKIP_DELAY_IN_MILISECONDS * 1000)
-        if self._last_state_time and now - self._last_state_time < since_last_update:
+        if self._skip_update:
+            self.skip_update = False
             state = self._last_state
         else:
             state = self._myko.get_state(self._childId)
             self._last_state = state
-            self._last_state_time = datetime.now()
 
         self._state = state["power"]
 
