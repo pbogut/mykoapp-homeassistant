@@ -174,7 +174,7 @@ class MykoLight(LightEntity):
         self._temperature_suffix = None
 
         self._last_state = None
-        self._skip_update = False
+        self._skip_state_update = False
 
         if None in (childId, model, deviceId, deviceClass) or "" in (childId, model, deviceId, deviceClass):
             [
@@ -260,11 +260,27 @@ class MykoLight(LightEntity):
         else:
             return self._state == "on"
 
+    def set_state(self, state):
+        self._last_state = self._myko.set_state(self._childId, state)
+        self._skip_state_update = True
+
+    def get_state(self):
+        # This function is called right after item changes state. When we update
+        # item state with set_state, API is returning new state. Since this
+        # function is called right after, there is no need to call API for new
+        # state again. In fact its harmful, since often server is not up to date
+        # right after change was requested and may return old data.
+        if self._skip_state_update and self._last_state:
+            self._skip_state_update = False
+        else:
+            self._last_state = self._myko.get_state(self._childId)
+
+        return self._last_state
+
     def send_command(self, field_name, field_state) -> None:
         state = {}
         state[field_name] = field_state
-        self._last_state = self._myko.set_state(self._childId, state)
-        self._skip_update = True
+        self.set_state(state)
 
     def turn_on(self, **kwargs: Any) -> None:
         state = {
@@ -312,8 +328,7 @@ class MykoLight(LightEntity):
             else:
                 state["color-temperature"] = self._color_temp
 
-        self._last_state = self._myko.set_state(self._childId, state)
-        self._skip_update = True
+        self.set_state(state)
         self._state = "on" # lets be optimistic and assume it worked
 
     @property
@@ -335,8 +350,7 @@ class MykoLight(LightEntity):
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
-        self._last_state = self._myko.set_state(self._childId, {"power": "off"})
-        self._skip_update = True
+        self.set_state({"power": "off"})
         self._state = "off" # lets be optimistic and assume it worked
 
     @property
@@ -349,21 +363,7 @@ class MykoLight(LightEntity):
 
         This is the only method that should fetch new data for Home Assistant.
         """
-        state = {}
-
-        # This function is called right after item changes state. When we update
-        # item state with set_state, API is returning new state. Since this
-        # function is called right after, there is no need to call API for new
-        # state again. In fact its harmful, since often server is not up to date
-        # right after change was requested and may return old data.
-
-        if self._skip_update:
-            self.skip_update = False
-            state = self._last_state
-        else:
-            state = self._myko.get_state(self._childId)
-            self._last_state = state
-
+        state = self.get_state()
         self._state = state["power"]
 
         if self._debug:
