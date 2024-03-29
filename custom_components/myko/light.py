@@ -285,9 +285,9 @@ class MykoLight(LightEntity):
         self.set_state(state)
 
     def turn_on(self, **kwargs: Any) -> None:
-        state = {
-            "power": "on",
-        }
+        state = {}
+        if self._state == "off":
+            state["power"] = "on"
 
         if ATTR_BRIGHTNESS in kwargs and (
             ColorMode.ONOFF not in self._supported_color_modes
@@ -352,6 +352,8 @@ class MykoLight(LightEntity):
 
     def turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
+        if self._state == "off":
+            return
         self.set_state({"power": "off"})
         self._state = "off" # lets be optimistic and assume it worked
 
