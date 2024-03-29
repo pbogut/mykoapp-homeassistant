@@ -225,6 +225,8 @@ class MykoLight(LightEntity):
     def color_mode(self) -> ColorMode:
         if self._colorMode == "color":
             return ColorMode.RGB
+        if self._colorMode == "white":
+            return ColorMode.WHITE
         return self._colorMode
 
     @property
@@ -304,8 +306,7 @@ class MykoLight(LightEntity):
             any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes)
             or ColorMode.COLOR_TEMP in self._supported_color_modes
         ):
-            self._colorMode = ATTR_WHITE
-            state["color-mode"] = self._colorMode
+            state["color-mode"] = "white"
             brightness = kwargs.get(ATTR_WHITE, self._brightness)
             state["brightness"] = _brightness_to_myko(brightness)
 
@@ -313,6 +314,7 @@ class MykoLight(LightEntity):
             any(mode in COLOR_MODES_COLOR for mode in self._supported_color_modes)
             or ColorMode.COLOR_TEMP in self._supported_color_modes
         ):
+            state["color-mode"] = "white"
             self._color_temp = _convert_color_temp(kwargs[ATTR_COLOR_TEMP])
             if self._temperature_choices is not None:
                 self._color_temp = self._temperature_choices[
